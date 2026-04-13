@@ -30,4 +30,13 @@ class Pembelian extends Model
     {
         return $this->hasMany(PembelianDetail::class);
     }
+
+    protected $appends = ['produk'];
+
+public function getProdukAttribute()
+{
+    return $this->details->count()
+        ? $this->details->pluck('product.name')->implode(', ')
+        : 'Produk tidak tersedia';
+}
 }

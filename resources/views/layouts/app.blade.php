@@ -123,7 +123,7 @@
             {{-- PEMBELIAN --}}
             <a href="{{ Auth::user()->role == 'admin' ? '/admin/pembelian' : '/petugas/pembelian' }}"
                 class="{{ request()->is(Auth::user()->role . '/pembelian*') ? 'bg-primary text-white' : '' }}">
-                <i class="fas fa-shopping-cart"></i> Pembelian
+                <i class="fas fa-shopping-cart"></i> Penjualan
             </a>
 
             {{-- KHUSUS ADMIN --}}

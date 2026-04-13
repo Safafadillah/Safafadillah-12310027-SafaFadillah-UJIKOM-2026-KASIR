@@ -15,15 +15,28 @@
 
         <!-- BUTTONS -->
         <div class="mb-3 d-flex justify-content-between">
-            <a href="{{ route('petugas.pembelian.export') }}" class="btn btn-success">
-                Export Excel
-            </a>
+<a href="{{ route('petugas.pembelian.export', request()->query()) }}" class="btn btn-success">
+    Export Excel
+</a>
             <a href="{{ route('petugas.pembelian.create') }}" class="btn btn-primary">
                 <i class="fas fa-plus"></i> Tambah Pembelian
             </a>
         </div>
 
         <!-- FILTER & SEARCH -->
+
+        <form method="GET" class="d-flex gap-2">
+    <input type="date" name="tanggal_awal" class="form-control"
+        value="{{ request('tanggal_awal') }}">
+
+    <span>-</span>
+
+    <input type="date" name="tanggal_akhir" class="form-control"
+        value="{{ request('tanggal_akhir') }}">
+
+    <button class="btn btn-primary">Filter</button>
+</form>
+
         <form method="GET">
             <div class="row mb-3">
 

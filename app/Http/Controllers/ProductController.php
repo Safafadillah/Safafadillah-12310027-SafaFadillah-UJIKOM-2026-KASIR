@@ -41,14 +41,24 @@ class ProductController extends Controller
             'image.max' => 'Ukuran gambar maksimal 2 MB.'
         ]);
 
-        $imagePath = $request->file('image')->store('products', 'public');
+$imagePath = $request->file('image')->store('products', 'public');
 
-        Product::create([
-            'name' => $request->name,
-            'price' => str_replace(['Rp. ', '.'], '', $request->price),
-            'stock' => $request->stock,
-            'image' => $imagePath
-        ]);
+$price = str_replace(['Rp. ', '.'], '', $request->price);
+
+$product = Product::where('name', $request->name)
+    ->where('price', $price)
+    ->first();
+
+if ($product) {
+    $product->increment('stock', $request->stock);
+} else {
+    Product::create([
+        'name' => $request->name,
+        'price' => $price,
+        'stock' => $request->stock,
+        'image' => $imagePath
+    ]);
+}
 
         return redirect('/admin/produk')->with('success', 'Produk berhasil ditambahkan');
     }

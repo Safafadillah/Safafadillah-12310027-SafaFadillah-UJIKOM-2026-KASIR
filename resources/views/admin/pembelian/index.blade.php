@@ -14,34 +14,49 @@
     <div class="card p-4 shadow-sm">
 
         <!-- EXPORT -->
-        <div class="mb-4">
-            <a href="{{ route('admin.pembelian.export') }}" class="btn btn-success">
-                Export Pembelian
-            </a>
-        </div>
+<div class="mb-4 d-flex gap-2 align-items-center">
+<a href="{{ route('admin.pembelian.export', request()->query()) }}" class="btn btn-success">
+    Export Pembelian
+</a>
+<form method="GET" class="d-flex gap-2 align-items-center">
+    <input type="date" name="tanggal_awal" class="form-control"
+        value="{{ request('tanggal_awal') }}">
+
+    <span>-</span>
+
+    <input type="date" name="tanggal_akhir" class="form-control"
+        value="{{ request('tanggal_akhir') }}">
+
+    <button class="btn btn-primary">Filter</button>
+</form>
+</div>
 
         <!-- FILTER & SEARCH -->
-        <form method="GET">
-            <div class="row mb-3">
+<form method="GET">
+    <div class="row mb-3">
 
-                <div class="col-md-6 d-flex align-items-center gap-2">
-                    <label>Tampilkan</label>
-                    <select name="perPage" class="form-select w-auto" onchange="this.form.submit()">
-                        <option value="10" {{ request('perPage') == 10 ? 'selected' : '' }}>10</option>
-                        <option value="25" {{ request('perPage') == 25 ? 'selected' : '' }}>25</option>
-                        <option value="50" {{ request('perPage') == 50 ? 'selected' : '' }}>50</option>
-                    </select>
-                    <span>entri</span>
-                </div>
+        <!-- LEFT -->
+        <div class="col-md-6 d-flex align-items-center gap-2">
+            <label>Tampilkan</label>
+            <select name="perPage" class="form-select w-auto" onchange="this.form.submit()">
+                <option value="10" {{ request('perPage') == 10 ? 'selected' : '' }}>10</option>
+                <option value="25" {{ request('perPage') == 25 ? 'selected' : '' }}>25</option>
+                <option value="50" {{ request('perPage') == 50 ? 'selected' : '' }}>50</option>
+            </select>
+            <span>entri</span>
+        </div>
 
-                <div class="col-md-6 d-flex justify-content-end gap-2">
-                    <input type="text" name="search" class="form-control w-50" placeholder="Cari pelanggan..."
-                        value="{{ request('search') }}">
-                    <button class="btn btn-primary">Cari</button>
-                </div>
+        <!-- RIGHT -->
+        <div class="col-md-6 d-flex justify-content-end gap-2">
 
-            </div>
-        </form>
+            <input type="text" name="search" class="form-control w-50"
+                placeholder="Cari pelanggan..." value="{{ request('search') }}">
+
+            <button class="btn btn-primary">Filter</button>
+        </div>
+
+    </div>
+</form>
 
         <!-- TABLE -->
         <div class="table-responsive">

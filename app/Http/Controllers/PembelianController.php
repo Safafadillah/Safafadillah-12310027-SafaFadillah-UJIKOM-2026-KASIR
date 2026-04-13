@@ -16,19 +16,25 @@ class PembelianController extends Controller
 {
     // ================= ADMIN =================
 
-    public function index(Request $request)
-    {
-        $perPage = $request->perPage ?? 10;
-        $search = $request->search;
+public function index(Request $request)
+{
+    $perPage = $request->perPage ?? 10;
+    $search = $request->search;
+    $tanggal_awal = $request->tanggal_awal;
+    $tanggal_akhir = $request->tanggal_akhir;
 
-        $pembelians = Pembelian::when($search, function ($query) use ($search) {
+    $pembelians = Pembelian::with('details.product') // penting biar tidak N+1
+        ->when($search, function ($query) use ($search) {
             return $query->where('nama_pelanggan', 'like', "%$search%");
         })
-            ->latest()
-            ->paginate($perPage);
+        ->when($tanggal_awal && $tanggal_akhir, function ($query) use ($tanggal_awal, $tanggal_akhir) {
+            return $query->whereBetween('tanggal_pembelian', [$tanggal_awal, $tanggal_akhir]);
+        })
+        ->orderBy('tanggal_pembelian', 'asc')
+        ->paginate($perPage);
 
-        return view('admin.pembelian.index', compact('pembelians'));
-    }
+    return view('admin.pembelian.index', compact('pembelians'));
+}
 
     public function detail($id)
     {
@@ -37,85 +43,80 @@ class PembelianController extends Controller
         return view('admin.pembelian.detail', compact('p'));
     }
 
-    public function exportExcel()
-    {
-        $data = Pembelian::with('details.product')->latest()->get();
+public function exportExcel(Request $request)
+{
+    $tanggal_awal = $request->tanggal_awal;
+    $tanggal_akhir = $request->tanggal_akhir;
 
-        $spreadsheet = new Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
+    $data = Pembelian::with('details.product')
+        ->when($tanggal_awal && $tanggal_akhir, function ($query) use ($tanggal_awal, $tanggal_akhir) {
+            return $query->whereBetween('tanggal_pembelian', [$tanggal_awal, $tanggal_akhir]);
+        })
+        ->orderBy('tanggal_pembelian', 'asc')
+        ->get();
 
-        // HEADER
+    $spreadsheet = new Spreadsheet();
+    $sheet = $spreadsheet->getActiveSheet();
+
+    $sheet->fromArray([
+        'Nama Pelanggan',
+        'No HP',
+        'Poin',
+        'Produk',
+        'Total Harga',
+        'Total Bayar',
+        'Diskon Poin',
+        'Kembalian',
+        'Tanggal'
+    ], NULL, 'A1');
+
+    $row = 2;
+
+    foreach ($data as $p) {
+
         $sheet->fromArray([
-            'Nama Pelanggan',
-            'No HP',
-            'Poin Pelanggan',
-            'Produk',
-            'Total Harga',
-            'Total Bayar',
-            'Diskon Poin',
-            'Kembalian',
-            'Tanggal'
-        ], NULL, 'A1');
+            $p->nama_pelanggan,
+            $p->no_telp,
+            $p->poin_didapat ?? 0,
+            $p->produk, // 🔥 DARI ACCESSOR
+            'Rp. ' . number_format($p->total_harga, 0, ',', '.'),
+            'Rp. ' . number_format($p->total_bayar, 0, ',', '.'),
+            'Rp. ' . number_format($p->poin_dipakai, 0, ',', '.'),
+            'Rp. ' . number_format($p->kembalian, 0, ',', '.'),
+            \Carbon\Carbon::parse($p->tanggal_pembelian)->format('d-m-Y')
+        ], NULL, 'A' . $row);
 
-        $row = 2;
-
-        foreach ($data as $p) {
-
-            $produk = $p->details->pluck('product.name')->implode(', ');
-
-            // hitung poin
-            $poin =
-                Pembelian::where('no_telp', $p->no_telp)
-                ->where('id', '<=', $p->id)
-                ->sum('poin_didapat')
-                -
-                Pembelian::where('no_telp', $p->no_telp)
-                ->where('id', '<=', $p->id)
-                ->sum('poin_dipakai');
-
-            $poin = max($poin, 0);
-
-            //hapus
-            Pembelian::where('no_telp', $p->no_telp)->sum('poin_didapat') -
-                Pembelian::where('no_telp', $p->no_telp)->sum('poin_dipakai');
-
-            $sheet->fromArray([
-                $p->nama_pelanggan,
-                $p->no_telp,
-                max($poin, 0),
-                $produk,
-                'Rp. ' . number_format($p->total_harga, 0, ',', '.'),
-                'Rp. ' . number_format($p->total_bayar, 0, ',', '.'),
-                'Rp. ' . number_format($p->poin_dipakai, 0, ',', '.'),
-                'Rp. ' . number_format($p->kembalian, 0, ',', '.'),
-                $p->created_at->format('d-m-Y')
-            ], NULL, 'A' . $row);
-
-            $row++;
-        }
-
-        $writer = new Xlsx($spreadsheet);
-
-        return response()->streamDownload(function () use ($writer) {
-            $writer->save('php://output');
-        }, 'pembelian_admin.xlsx');
+        $row++;
     }
+
+    $writer = new Xlsx($spreadsheet);
+
+    return response()->streamDownload(function () use ($writer) {
+        $writer->save('php://output');
+    }, 'pembelian_admin.xlsx');
+}
 
     // ================= PETUGAS =================
 
-    public function indexPetugas(Request $request)
-    {
-        $perPage = $request->perPage ?? 10;
-        $search = $request->search;
+public function indexPetugas(Request $request)
+{
+    $perPage = $request->perPage ?? 10;
+    $search = $request->search;
+    $tanggal_awal = $request->tanggal_awal;
+    $tanggal_akhir = $request->tanggal_akhir;
 
-        $pembelians = Pembelian::when($search, function ($query) use ($search) {
+    $pembelians = Pembelian::with('details.product')
+        ->when($search, function ($query) use ($search) {
             return $query->where('nama_pelanggan', 'like', "%$search%");
         })
-            ->latest()
-            ->paginate($perPage);
+        ->when($tanggal_awal && $tanggal_akhir, function ($query) use ($tanggal_awal, $tanggal_akhir) {
+            return $query->whereBetween('tanggal_pembelian', [$tanggal_awal, $tanggal_akhir]);
+        })
+        ->orderBy('tanggal_pembelian', 'asc')
+        ->paginate($perPage);
 
-        return view('petugas.pembelian.index', compact('pembelians'));
-    }
+    return view('petugas.pembelian.index', compact('pembelians'));
+}
 
     public function createPetugas()
     {
@@ -274,67 +275,73 @@ class PembelianController extends Controller
 
     // ================= EXPORT EXCEL =================
 
-    public function exportExcelPetugas()
-    {
-        $data = Pembelian::with('details.product')->latest()->get();
+public function exportExcelPetugas(Request $request)
+{
+    $tanggal_awal = $request->tanggal_awal;
+    $tanggal_akhir = $request->tanggal_akhir;
 
-        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
+    $data = Pembelian::with('details.product')
+        ->when($tanggal_awal && $tanggal_akhir, function ($query) use ($tanggal_awal, $tanggal_akhir) {
+            return $query->whereBetween('tanggal_pembelian', [$tanggal_awal, $tanggal_akhir]);
+        })
+        ->latest()
+        ->get();
+
+    $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+    $sheet = $spreadsheet->getActiveSheet();
+
+    $sheet->fromArray([
+        'Nama Pelanggan',
+        'No HP',
+        'Poin Pelanggan',
+        'Produk',
+        'Total Harga',
+        'Total Bayar',
+        'Diskon Poin',
+        'Kembalian',
+        'Tanggal'
+    ], NULL, 'A1');
+
+    $row = 2;
+
+    foreach ($data as $p) {
+
+        $produk = $p->details->count()
+    ? $p->details->pluck('product.name')->implode(', ')
+    : 'Produk tidak tersedia';
+
+        $poin =
+            Pembelian::where('no_telp', $p->no_telp)
+            ->where('id', '<=', $p->id)
+            ->sum('poin_didapat')
+            -
+            Pembelian::where('no_telp', $p->no_telp)
+            ->where('id', '<=', $p->id)
+            ->sum('poin_dipakai');
+
+        $poin = max($poin, 0);
 
         $sheet->fromArray([
-            'Nama Pelanggan',
-            'No HP',
-            'Poin Pelanggan',
-            'Produk',
-            'Total Harga',
-            'Total Bayar',
-            'Diskon Poin',
-            'Kembalian',
-            'Tanggal'
-        ], NULL, 'A1');
+            $p->nama_pelanggan,
+            $p->no_telp,
+            $poin,
+            $produk,
+            'Rp. ' . number_format($p->total_harga, 0, ',', '.'),
+            'Rp. ' . number_format($p->total_bayar, 0, ',', '.'),
+            'Rp. ' . number_format($p->poin_dipakai, 0, ',', '.'),
+            'Rp. ' . number_format($p->kembalian, 0, ',', '.'),
+            \Carbon\Carbon::parse($p->tanggal_pembelian)->format('d-m-Y')
+        ], NULL, 'A' . $row);
 
-        $row = 2;
-
-        foreach ($data as $p) {
-
-            $produk = $p->details->pluck('product.name')->implode(', ');
-
-            $poin =
-                Pembelian::where('no_telp', $p->no_telp)
-                ->where('id', '<=', $p->id)
-                ->sum('poin_didapat')
-                -
-                Pembelian::where('no_telp', $p->no_telp)
-                ->where('id', '<=', $p->id)
-                ->sum('poin_dipakai');
-
-            $poin = max($poin, 0);
-
-            //hapus
-            Pembelian::where('no_telp', $p->no_telp)->sum('poin_didapat') -
-                Pembelian::where('no_telp', $p->no_telp)->sum('poin_dipakai');
-
-            $sheet->fromArray([
-                $p->nama_pelanggan,
-                $p->no_telp,
-                max($poin, 0),
-                $produk,
-                'Rp. ' . number_format($p->total_harga, 0, ',', '.'),
-                'Rp. ' . number_format($p->total_bayar, 0, ',', '.'),
-                'Rp. ' . number_format($p->poin_dipakai, 0, ',', '.'),
-                'Rp. ' . number_format($p->kembalian, 0, ',', '.'),
-                $p->created_at->format('d-m-Y')
-            ], NULL, 'A' . $row);
-
-            $row++;
-        }
-
-        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
-
-        return response()->streamDownload(function () use ($writer) {
-            $writer->save('php://output');
-        }, 'pembelian_petugas.xlsx');
+        $row++;
     }
+
+    $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+
+    return response()->streamDownload(function () use ($writer) {
+        $writer->save('php://output');
+    }, 'pembelian_petugas.xlsx');
+}
 
     // ================= EXPORT PDF =================
     public function downloadPdf($id)

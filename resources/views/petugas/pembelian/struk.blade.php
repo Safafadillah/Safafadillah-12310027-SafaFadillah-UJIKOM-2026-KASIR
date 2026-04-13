@@ -4,7 +4,7 @@
     <div class="card p-4">
 
         <div class="d-flex gap-2 mb-3">
-            <a href="#" class="btn btn-sm btn-success">
+            <a href="{{ route('petugas.pembelian.pdf', $pembelian->id) }}" class="btn btn-sm btn-success">
                 Unduh PDF
             </a>
             <a href="/petugas/pembelian" class="btn btn-sm btn-secondary">Kembali</a>

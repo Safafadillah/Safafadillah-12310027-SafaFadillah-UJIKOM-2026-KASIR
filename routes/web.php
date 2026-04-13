@@ -22,12 +22,19 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 // ================= ADMIN =================
 Route::middleware(['role:admin'])->prefix('admin')->group(function () {
 
-    Route::get('/dashboard', function () {
-        return view('admin.dashboard', [
-            'productsCount' => Product::count(),
-            'usersCount' => User::count(),
-        ]);
-    });
+Route::get('/dashboard', function () {
+
+    $today = now()->toDateString();
+
+    $totalHariIni = \App\Models\Pembelian::whereDate('created_at', $today)
+        ->sum('total_harga');
+
+    return view('admin.dashboard', [
+        'productsCount' => Product::count(),
+        'usersCount' => User::count(),
+        'totalHariIni' => $totalHariIni // ✅ tambahan
+    ]);
+});
 
     // ================= PRODUK =================
     Route::get('/produk', [ProductController::class, 'index']);

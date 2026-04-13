@@ -4,7 +4,9 @@
 
 <div class="mb-3">
     <div class="d-flex align-items-center gap-2 text-muted mb-2">
-        <a href="/admin/dashboard" class="text-muted text-decoration-none"><i class="fas fa-home"></i></a>
+        <a href="/admin/dashboard" class="text-muted text-decoration-none">
+            <i class="fas fa-home"></i>
+        </a>
         <span>></span>
         <span>Dashboard</span>
     </div>
@@ -13,7 +15,8 @@
 <div class="d-flex align-items-center gap-2 mb-2">
     <i class="fas fa-hand-wave text-primary" style="font-size: 1.5rem;"></i>
     <h5 class="mb-1">
-        Selamat datang, <span class="fw-bold">{{ Auth::user()->role ?? 'Admin' }}</span>
+        Selamat datang,
+        <span class="fw-bold">{{ Auth::user()->role ?? 'Admin' }}</span>
     </h5>
 </div>
 
@@ -24,7 +27,7 @@
 <div class="row g-4">
 
     <!-- TOTAL PRODUK -->
-    <div class="col-md-6">
+    <div class="col-md-4">
         <div class="card shadow-sm p-4">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
@@ -41,7 +44,7 @@
     </div>
 
     <!-- TOTAL USER -->
-    <div class="col-md-6">
+    <div class="col-md-4">
         <div class="card shadow-sm p-4">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
@@ -54,6 +57,24 @@
                     <i class="fas fa-users fa-2x text-success"></i>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- TOTAL PENJUALAN HARI INI -->
+    <div class="col-md-4">
+        <div class="card shadow-sm p-4 text-center">
+            <h6 class="text-muted mb-2">
+                <i class="fas fa-cash-register me-1"></i> Total Penjualan Hari Ini
+            </h6>
+
+            <h2 class="fw-bold my-2">
+                Rp {{ number_format($totalHariIni ?? 0) }}
+            </h2>
+
+            <small class="text-secondary">
+                {{ now()->timezone('Asia/Jakarta')->translatedFormat('d F Y') }}
+                pukul {{ now()->timezone('Asia/Jakarta')->format('H:i') }} WIB
+            </small>
         </div>
     </div>
 
